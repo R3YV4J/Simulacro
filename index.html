@@ -1,0 +1,685 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Simulacro de incidente: universidad — Nunsys</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --pink:#E6007E; --pink-light:#FCEAF3; --ink:#1A1A1A; --ink-soft:#4A4A4A; --paper:#FFFFFF; --floor:#FAF9FA; --line:#ECE4E9;
+    --good:#16A34A; --good-bg:#EAF9EF; --good-line:#BFE6CC;
+    --warn:#B45309; --warn-bg:#FFF6E5; --warn-line:#F3D9A4;
+    --bad:#D64545; --bad-bg:#FDEEEE; --bad-line:#F4C7C3;
+    --term:#0D1117; --term-text:#E6EDF3;
+  }
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]){
+      --ink:#F2F0F1; --ink-soft:#C9C3C7; --paper:#17151A; --floor:#111013; --line:#2C2830; --pink-light:#2B1522;
+      --good-bg:#102418; --good-line:#1f3d2b; --warn-bg:#2b2111; --warn-line:#4d3a17; --bad-bg:#3a1517; --bad-line:#5a2226;
+    }
+  }
+  *{ box-sizing:border-box; }
+  body{ margin:0; background:var(--floor); color:var(--ink); font-family:'Inter',system-ui,-apple-system,sans-serif;
+        padding-top:env(safe-area-inset-top,0px); padding-bottom:env(safe-area-inset-bottom,0px); }
+  h1,h2,h3{ font-family:'Space Grotesk',sans-serif; letter-spacing:-.01em; }
+  button{ font-family:inherit; cursor:pointer; }
+  code{ font-family:'JetBrains Mono',monospace; background:rgba(0,0,0,.07); padding:1px 6px; border-radius:6px; font-size:.92em; }
+  .app{ min-height:100vh; min-height:100dvh; display:flex; flex-direction:column; }
+
+  .topbar{ display:flex; align-items:center; justify-content:space-between; gap:14px; padding:13px 22px; background:var(--paper);
+           border-bottom:1px solid var(--line); flex-wrap:wrap; row-gap:8px; }
+  .brand{ display:flex; align-items:center; gap:10px; font-weight:700; font-size:15px; white-space:nowrap; }
+  .brand .dot{ width:10px; height:10px; border-radius:50%; background:var(--pink); }
+  .dots{ display:flex; gap:6px; }
+  .dots i{ width:22px; height:8px; border-radius:99px; background:var(--line); display:block; }
+  .dots i.cur{ background:var(--pink); } .dots i.g{ background:var(--good); } .dots i.w{ background:#E8A33D; } .dots i.b{ background:var(--bad); }
+  .reset{ background:none; border:none; color:var(--ink-soft); font-size:13px; text-decoration:underline; padding:6px; }
+
+  .hud{ display:grid; grid-template-columns:repeat(3,1fr); gap:10px; max-width:900px; width:100%; margin:18px auto 0; padding:0 22px; }
+  .tile{ background:var(--paper); border:1px solid var(--line); border-radius:14px; padding:10px 14px; }
+  .tile .k{ font-size:11px; font-weight:700; letter-spacing:.05em; color:var(--ink-soft); text-transform:uppercase; }
+  .tile .v{ font-family:'JetBrains Mono',monospace; font-size:22px; font-weight:700; margin-top:2px; }
+  .tile .v.red{ color:var(--bad); } .tile .v.amber{ color:var(--warn); } .tile .v.green{ color:var(--good); } .tile .v.pink{ color:var(--pink); }
+
+  .main{ max-width:900px; width:100%; margin:0 auto; padding:20px 22px 70px; display:flex; flex-direction:column; gap:16px; }
+  .kicker{ color:var(--pink); font-weight:800; font-size:13px; letter-spacing:.03em; }
+  .kicker span{ color:var(--ink-soft); font-weight:600; }
+  .card{ background:var(--paper); border:1px solid var(--line); border-radius:18px; padding:22px 24px; }
+  .card p{ margin:0 0 10px; line-height:1.55; font-size:17px; } .card p:last-child{ margin-bottom:0; }
+  .evidence{ background:var(--term); color:var(--term-text); border-radius:14px; padding:14px 18px; font-family:'JetBrains Mono',monospace;
+             font-size:13.5px; line-height:1.7; overflow-x:auto; white-space:pre; }
+  .evidence .hl{ color:#FF7AB8; } .evidence .dim{ color:#7D8590; } .evidence .warn{ color:#F0B429; }
+  .event{ background:var(--bad-bg); border:1px solid var(--bad-line); border-radius:14px; padding:14px 18px; font-size:15.5px; line-height:1.5; }
+  .event b{ color:var(--bad); }
+
+  .opts{ display:flex; flex-direction:column; gap:10px; }
+  .opt{ text-align:left; display:flex; gap:12px; align-items:flex-start; background:var(--paper); border:1.5px solid var(--line); border-radius:14px;
+        padding:14px 16px; font-size:16px; line-height:1.45; color:var(--ink); transition:.12s; }
+  .opt:hover:not(:disabled){ border-color:var(--pink); background:var(--pink-light); }
+  .opt:disabled{ cursor:default; }
+  .opt .tag{ flex:none; width:26px; height:26px; border-radius:8px; background:var(--pink-light); color:var(--pink); font-weight:800; font-size:13px; display:flex; align-items:center; justify-content:center; }
+  .opt.chosen{ border-color:var(--pink); background:var(--pink-light); }
+  .opt.best{ border-color:var(--good); background:var(--good-bg); } .opt.best .tag{ background:var(--good); color:#fff; }
+  .opt.chosen.bad{ border-color:var(--bad); background:var(--bad-bg); } .opt.chosen.bad .tag{ background:var(--bad); color:#fff; }
+  .opt.chosen.warn{ border-color:#E8A33D; background:var(--warn-bg); } .opt.chosen.warn .tag{ background:#E8A33D; color:#fff; }
+  .opt.dim{ opacity:.55; }
+  .opt .mark{ margin-left:auto; flex:none; font-size:12px; font-weight:800; padding-top:4px; }
+
+  .chk{ text-align:left; display:flex; gap:12px; align-items:flex-start; background:var(--paper); border:1.5px solid var(--line); border-radius:14px; padding:13px 16px; font-size:16px; line-height:1.45; color:var(--ink); width:100%; }
+  .chk .box{ flex:none; width:22px; height:22px; border-radius:6px; border:2px solid var(--line); display:flex; align-items:center; justify-content:center; font-weight:800; font-size:14px; color:#fff; margin-top:1px; }
+  .chk.on{ border-color:var(--pink); background:var(--pink-light); } .chk.on .box{ background:var(--pink); border-color:var(--pink); }
+  .chk.r-ok{ border-color:var(--good); background:var(--good-bg); } .chk.r-ok .box{ background:var(--good); border-color:var(--good); }
+  .chk.r-bad{ border-color:var(--bad); background:var(--bad-bg); } .chk.r-bad .box{ background:var(--bad); border-color:var(--bad); }
+  .chk .why{ display:block; font-size:14px; color:var(--ink-soft); margin-top:4px; }
+
+  .btn{ border:none; border-radius:999px; padding:13px 26px; font-weight:700; font-size:15px; background:var(--ink); color:#fff; }
+  .btn.primary{ background:var(--pink); } .btn.ghost{ background:transparent; color:var(--ink); border:1.5px solid var(--line); }
+  .btn:disabled{ opacity:.4; cursor:default; }
+  .row{ display:flex; gap:10px; flex-wrap:wrap; align-items:center; }
+
+  .result{ border-radius:16px; padding:18px 22px; border:1px solid; display:flex; flex-direction:column; gap:10px; }
+  .result.good{ background:var(--good-bg); border-color:var(--good-line); } .result.warn{ background:var(--warn-bg); border-color:var(--warn-line); } .result.bad{ background:var(--bad-bg); border-color:var(--bad-line); }
+  .badge{ font-weight:800; font-size:13px; letter-spacing:.03em; } .result.good .badge{ color:var(--good); } .result.warn .badge{ color:var(--warn); } .result.bad .badge{ color:var(--bad); }
+  .result p{ margin:0; line-height:1.55; font-size:16px; }
+  .result .why{ font-size:15px; color:var(--ink-soft); }
+  .result .best{ font-size:14.5px; border-top:1px dashed rgba(0,0,0,.15); padding-top:10px; }
+  .chips{ display:flex; gap:8px; flex-wrap:wrap; }
+  .chip{ font-family:'JetBrains Mono',monospace; font-size:12.5px; font-weight:700; background:rgba(0,0,0,.06); padding:5px 10px; border-radius:99px; }
+  .chip.bad{ background:var(--bad-bg); color:var(--bad); } .chip.good{ background:var(--good-bg); color:var(--good); }
+
+  .intro h1{ font-size:clamp(28px,5vw,40px); margin:0 0 12px; }
+  .intro .lead{ font-size:18px; line-height:1.55; color:var(--ink-soft); }
+  .rules{ display:grid; grid-template-columns:repeat(3,1fr); gap:10px; margin:6px 0; }
+  .rules div{ background:var(--paper); border:1px solid var(--line); border-radius:14px; padding:14px 16px; font-size:14.5px; line-height:1.45; }
+  .rules b{ display:block; color:var(--pink); margin-bottom:4px; font-size:13px; letter-spacing:.03em; }
+
+  .end h1{ font-size:20px; margin:0; color:var(--pink); letter-spacing:.02em; }
+  .grade{ font-family:'Space Grotesk',sans-serif; font-size:84px; line-height:1; margin:4px 0; } .grade b{ color:var(--pink); } .grade span{ font-size:34px; color:var(--ink-soft); font-weight:500; }
+  .tier{ font-size:22px; font-weight:700; margin:6px 0 4px; }
+  .bar{ height:12px; background:var(--line); border-radius:99px; overflow:hidden; } .bar i{ display:block; height:100%; background:var(--pink); border-radius:99px; }
+  .facts{ display:grid; grid-template-columns:repeat(3,1fr); gap:10px; }
+  .fact{ background:var(--paper); border:1px solid var(--line); border-radius:14px; padding:12px 14px; } .fact .k{ font-size:11px; font-weight:700; color:var(--ink-soft); letter-spacing:.05em; text-transform:uppercase; } .fact .v{ font-weight:700; margin-top:3px; font-size:16px; }
+  .fact .v.green{ color:var(--good); } .fact .v.amber{ color:var(--warn); } .fact .v.red{ color:var(--bad); }
+  h2.sec{ font-size:20px; margin:18px 0 4px; }
+  .rec{ background:var(--paper); border:1px solid var(--line); border-left:4px solid var(--line); border-radius:14px; padding:14px 18px; font-size:15px; line-height:1.5; }
+  .rec.g{ border-left-color:var(--good); } .rec.w{ border-left-color:#E8A33D; } .rec.b{ border-left-color:var(--bad); }
+  .rec .t{ font-size:12px; font-weight:800; color:var(--ink-soft); letter-spacing:.04em; margin-bottom:3px; }
+  .rec .you{ margin:4px 0; } .rec .better{ color:var(--ink-soft); font-size:14px; margin-top:4px; }
+  .real{ display:grid; grid-template-columns:repeat(3,1fr); gap:10px; }
+  .real div{ background:var(--pink-light); border-radius:14px; padding:14px 16px; font-size:14.5px; line-height:1.5; } .real b{ color:var(--pink); display:block; margin-bottom:4px; }
+  ul.lessons{ margin:6px 0 0; padding-left:20px; line-height:1.6; font-size:15.5px; }
+
+  @media (max-width:700px){
+    .hud, .rules, .facts, .real{ grid-template-columns:1fr; }
+    .hud{ grid-template-columns:repeat(3,1fr); gap:8px; padding:0 14px; } .tile .v{ font-size:18px; } .tile{ padding:8px 10px; }
+    .main{ padding:16px 14px 60px; } .topbar{ padding:12px 14px; } .grade{ font-size:68px; }
+  }
+</style>
+</head>
+<body>
+<div id="app" class="app"></div>
+<script>
+(function(){
+  "use strict";
+
+  /* ------------------------------------------------------------ helpers */
+  function pad(n){ return (n<10?"0":"")+n; }
+  function hhmm(m){ m = ((m%1440)+1440)%1440; return pad(Math.floor(m/60))+":"+pad(m%60); }
+  function el(tag, cls, html){ var e=document.createElement(tag); if(cls) e.className=cls; if(html!==undefined) e.innerHTML=html; return e; }
+  function shuffle(a){ a=a.slice(); for(var i=a.length-1;i>0;i--){ var j=Math.floor(Math.random()*(i+1)); var t=a[i]; a[i]=a[j]; a[j]=t; } return a; }
+  function letter(i){ return String.fromCharCode(65+i); }
+  function evLabel(n){ return n===0?["Intactas","green"]:(n===1?["Parciales","amber"]:["Destruidas","red"]); }
+
+  /* ------------------------------------------------------------ escenario */
+  var START = 540; // 09:00
+  var STEPS = [
+    /* 1 ---------------------------------------------------------------- */
+    { id:1, phase:"Detección y primera respuesta", startAt:547, type:"single",
+      text:function(s){ return "<p>Suena el teléfono. Es Marta, de la Secretaría de la Facultad de Ciencias: <em>«Se me han cambiado los nombres de todos los archivos de la carpeta de actas y sale un aviso en pantalla. Hoy cerramos las actas de la convocatoria.»</em> Te manda esta foto con el móvil:</p>"; },
+      evidence:function(s){ return "<span class='hl'>*** SUS ARCHIVOS HAN SIDO CIFRADOS ***</span>\nTodos sus documentos ahora terminan en <span class='warn'>.locked7</span>\nTiene 48 horas para contactar con nosotros.\nInstrucciones: LEEME_RECUPERAR.txt"; },
+      options:[
+        { t:"Le pides que desconecte el cable de red y la WiFi (sin apagar el equipo ni tocar nada más) y abres un incidente avisando a tu equipo.",
+          pts:10, mins:3, hosts:function(s){ return 6; },
+          out:function(s){ return "Marta lo hace en segundos. El equipo queda aislado pero encendido: la memoria, donde pueden estar el proceso del malware y sus claves, sigue intacta para el análisis."; },
+          why:"Primera regla ante un ransomware activo: aislar de la red cuanto antes y no apagar, porque la memoria volátil es evidencia forense. Si no puedes desconectar el equipo, entonces sí: apágalo para frenar el cifrado." },
+        { t:"Le pides que reinicie el PC por si se arregla.",
+          pts:0, mins:10, hosts:function(s){ return 14; }, ev:true,
+          out:function(s){ return "El PC arranca, pero los archivos siguen cifrados y el reinicio ha borrado la memoria con el rastro del malware. Mientras tanto, el ransomware ha seguido propagándose por las carpetas compartidas de la Facultad."; },
+          why:"Reiniciar no deshace el cifrado y destruye evidencias volátiles (procesos, claves, conexiones). Lo que sí hay que hacer es cortar la red." },
+        { t:"Le dices que borre la nota y los archivos raros, y que siga trabajando para cerrar las actas.",
+          pts:0, mins:5, hosts:function(s){ return 22; }, ev:true,
+          out:function(s){ return "Marta borra la nota y sigue conectada a las carpetas de la red. Cada minuto, el cifrado alcanza más ficheros compartidos."; },
+          why:"Borrar la nota no recupera nada, destruye información útil y mantiene el equipo conectado: el peor de los mundos." },
+        { t:"Abres una incidencia en el CAU (nivel 1) y esperas a que la revisen.",
+          pts:3, mins:20, hosts:function(s){ return 15; },
+          out:function(s){ return "El CAU la clasifica como «incidencia de usuario» y tarda 20 minutos en mirarla. En ese tiempo empiezan a llamar otras secretarías."; },
+          why:"Un ransomware en marcha no es una incidencia normal: hay que escalar al responsable de seguridad y aislar ya. Cada minuto de demora son más equipos cifrados." }
+      ]
+    },
+    /* 2 ---------------------------------------------------------------- */
+    { id:2, phase:"Contención", type:"single",
+      text:function(s){ return "<p>Abres la consola del EDR. <b>"+s.hosts+" equipos</b> (secretarías y despachos de administración) muestran cifrado masivo de ficheros y todos reciben conexiones SMB desde un servidor de ficheros, <code>SRV-FICHEROS-FAC</code>. Es semana de exámenes y matrícula: los teléfonos no paran de sonar.</p>"; },
+      evidence:function(s){ return "<span class='hl'>EDR · Alertas críticas</span>\n<span class='dim'>08:56</span>  SRV-FICHEROS-FAC  Comportamiento de ransomware   <span class='warn'>[sin contener]</span>\n<span class='dim'>09:01</span>  PC-SECRETARIA-14  Cifrado masivo de archivos     <span class='warn'>[sin contener]</span>\n<span class='dim'>...</span>    + "+Math.max(0,s.hosts-2)+" equipos más\nMovimiento lateral: SMB (445) desde SRV-FICHEROS-FAC"; },
+      options:[
+        { t:"Aislar con el EDR los equipos afectados y SRV-FICHEROS-FAC, bloquear el tráfico SMB entre las redes de administración, docencia e investigación y deshabilitar la cuenta de servicio que están usando.",
+          pts:10, mins:12, hosts:function(s){ return s.hosts+2; },
+          out:function(s){ return "En 12 minutos el cifrado se detiene. Quedan <b>"+(s.hosts+2)+" equipos afectados</b>, pero el Campus Virtual, la matrícula y las aulas siguen operativos y las evidencias están conservadas."; },
+          why:"Contener es cortar el movimiento lateral de forma selectiva: aislar, segmentar y quitarle al atacante la credencial que usa. Es lo que hizo la <b>Universidad de Alicante</b> en 2026: aislar los servidores afectados y desconectar los que compartían infraestructura, en plena convocatoria de exámenes y matrícula." },
+        { t:"Apagar de golpe todo el campus: servidores, Campus Virtual y eduroam incluidos, en plena semana de exámenes.",
+          pts:4, mins:15, hosts:function(s){ return s.hosts; }, ev:true,
+          out:function(s){ return "El cifrado se detiene, pero 25.000 personas se quedan sin servicios en pleno periodo de exámenes y la memoria de los equipos —con las pruebas— se pierde."; },
+          why:"Apagarlo todo frena el avance, pero destruye evidencia y paraliza incluso lo que no estaba afectado. <b>Colonial Pipeline</b> paró el oleoducto de forma preventiva porque no sabía hasta dónde había llegado el ataque: es una decisión de negocio, no el primer paso técnico." },
+        { t:"Esperar a que el proveedor del EDR confirme que no es un falso positivo.",
+          pts:0, mins:25, hosts:function(s){ return s.hosts+25; },
+          out:function(s){ return "Mientras esperas, el ransomware sigue saltando de equipo en equipo: <b>+25 equipos</b> en 25 minutos."; },
+          why:"Ya hay cifrado masivo y usuarios afectados: no es un falso positivo. <b>Target (2013)</b>: sus herramientas detectaron el malware, pero nadie actuó sobre las alertas y los atacantes tuvieron dos semanas más para robar 40 millones de tarjetas." },
+        { t:"Cambiar la contraseña del administrador de dominio y seguir investigando.",
+          pts:3, mins:10, hosts:function(s){ return s.hosts+12; },
+          out:function(s){ return "Rotar credenciales está bien, pero el cifrado en curso no depende de esa contraseña: sigue avanzando (<b>+12 equipos</b>)."; },
+          why:"Los cambios de credenciales son necesarios más adelante, pero primero hay que frenar el cifrado activo: aislar." }
+      ]
+    },
+    /* 3 ---------------------------------------------------------------- */
+    { id:3, phase:"Erradicación: ¿por dónde entraron?", type:"single",
+      text:function(s){ return "<p>Con la propagación controlada, revisas los logs de la VPN, del EDR y del directorio para saber por dónde entraron. Aparece algo muy de universidad: un servidor de un grupo de investigación que nadie del Servicio de Informática administraba.</p>"; },
+      evidence:function(s){ return "<span class='dim'>03:12</span>  VPN   login correcto  usuario=jgarcia (PDI, Dpto. Química)  origen=185.220.xx.xx (extranjero)  <span class='warn'>MFA: no requerido</span>\n<span class='dim'>03:18</span>  SRV-QUIM-01   explotación de vulnerabilidad  <span class='warn'>sin parchear desde hace 14 meses · sin agente EDR · lo administra el propio departamento</span>\n<span class='dim'>03:20</span>  EDR   alerta «Volcado de credenciales»  <span class='warn'>estado: NUEVA (nadie la ha abierto)</span>\n<span class='dim'>03:41</span>  AD    cuenta creada: <span class='hl'>svc_campus2</span> (administrador de dominio)\n<span class='dim'>08:56</span>  SRV-FICHEROS-FAC   inicio del cifrado masivo"; },
+      options:[
+        { t:"Bloquear la cuenta de jgarcia y revocar sus sesiones, exigir MFA en la VPN, aislar SRV-QUIM-01, rotar las credenciales privilegiadas y eliminar la cuenta svc_campus2.",
+          pts:10, mins:20,
+          out:function(s){ return "Cierras la puerta de entrada, aíslas el servidor huérfano y eliminas también la puerta que dejaron abierta (<code>svc_campus2</code>). El atacante ya no tiene forma de volver con lo que robó."; },
+          why:"Erradicar es cerrar el acceso inicial (VPN sin MFA), eliminar las puertas traseras (la cuenta nueva de administrador) y rotar credenciales. Es el fallo de <b>Colonial Pipeline</b> (una cuenta VPN sin MFA) y el de <b>Maastricht University</b>, donde el atacante escaló privilegios en un servidor sin parchear. Y la alerta de las 03:20 sin atender es el caso <b>Target</b>." },
+        { t:"Cambiar solo la contraseña de jgarcia.",
+          pts:4, mins:8, set:{ reentry:"la cuenta svc_campus2, que nadie eliminó" },
+          out:function(s){ return "Cambias esa contraseña, pero <code>svc_campus2</code> sigue siendo administrador de dominio y el servidor del departamento sigue sin parchear."; },
+          why:"Quedarte en el síntoma deja la persistencia del atacante (la cuenta creada) y el problema de fondo (sin MFA, servidor sin parchear)." },
+        { t:"Dejarlo para más tarde y centrarte en restaurar los servicios cuanto antes, que hay actas y matrículas pendientes.",
+          pts:0, mins:0, set:{ reentry:"la cuenta svc_campus2 y la VPN sin MFA, que nadie cerró" },
+          out:function(s){ return "Empiezas a restaurar con el atacante todavía dentro de la red."; },
+          why:"Restaurar sin cerrar el acceso es reconstruir con el ladrón dentro de casa." },
+        { t:"Apagar la VPN para todos, de forma indefinida.",
+          pts:3, mins:5, set:{ reentry:"la cuenta svc_campus2, que sigue activa" },
+          out:function(s){ return "Cortas el acceso remoto, pero la cuenta de administrador que crearon sigue activa y el profesorado se queda sin poder acceder desde casa."; },
+          why:"Cortar la VPN temporalmente es razonable como medida inmediata, pero no sustituye a eliminar la persistencia ni a implantar MFA." }
+      ]
+    },
+    /* 4 ---------------------------------------------------------------- */
+    { id:4, phase:"Comunicación en crisis", type:"single",
+      text:function(s){ return "<p>La comunidad universitaria se entera: decanos, profesorado, personal de administración y miles de estudiantes. Además, recepción te cuenta que ha llamado alguien diciendo ser <em>«del soporte de Microsoft»</em> para <em>«ayudar con el ataque»</em> y pidiendo contraseñas, y ya hay estudiantes que reciben un correo falso: <em>«Tu matrícula ha sido bloqueada, paga aquí»</em>.</p>"; },
+      options:[
+        { t:"Crear un canal alternativo (una web de contingencia fuera de vuestra infraestructura, redes oficiales, grupo de mensajería de decanos y directores, cartelería en los campus) con instrucciones claras: no conectar nada, no dar contraseñas a nadie que llame y un único punto de contacto.",
+          pts:10, mins:15,
+          out:function(s){ return "La comunidad sabe qué hacer, deja de reconectar equipos, la llamada falsa no consigue nada y se avisa de los correos falsos de matrícula."; },
+          why:"En un incidente el correo institucional puede estar comprometido: hay que comunicarse por un canal alternativo. Y con la comunidad alarmada, la ingeniería social (vishing y phishing) se dispara: los atacantes aprovechan el caos." },
+        { t:"Mandar un correo institucional a toda la comunidad con las instrucciones.",
+          pts:3, mins:10, set:{ mailRead:true },
+          out:function(s){ return "Las instrucciones llegan bien, pero el atacante tiene acceso al correo y lee lo que contáis."; },
+          why:"Instrucciones correctas por un canal malo: con el dominio comprometido, el atacante puede leer ese correo. Tendrá consecuencias más adelante." },
+        { t:"No decir nada hasta tener todos los datos, para no alarmar.",
+          pts:0, mins:0, set:{ reentry:"la contraseña que un empleado entregó a la llamada falsa" },
+          out:function(s){ return "Los rumores corren más rápido que tú: varios departamentos reconectan sus equipos y alguien da su contraseña a la llamada falsa."; },
+          why:"El silencio no protege: la gente actúa sin instrucciones. En el vishing, el atacante aprovecha el caos." },
+        { t:"Publicar un comunicado de prensa y en redes explicando lo ocurrido.",
+          pts:0, mins:20,
+          out:function(s){ return "Los medios empiezan a llamar al Rectorado y a la centralita. Todavía no tienes datos fiables y le has dado información al atacante."; },
+          why:"La comunicación externa va después, con datos contrastados y con el asesoramiento del gabinete jurídico y de comunicación." }
+      ]
+    },
+    /* 5 ---------------------------------------------------------------- */
+    { id:5, phase:"Recuperación: copias de seguridad",  type:"single",
+      enter:function(s){ s.flags.backupsHit = (s.hosts>=18); return []; },
+      text:function(s){
+        var t;
+        if(s.hosts>=18) t = "<p>Compruebas las copias. El NAS de backups online <b>también ha sido cifrado</b>: el ransomware lo alcanzó por la red. Te queda una copia <b>offline</b> en cinta del viernes, con un fin de semana de datos por rehacer.</p>";
+        else t = "<p>Compruebas las copias. El NAS de backups online <b>no está cifrado</b>, aunque está en el mismo dominio y es alcanzable desde la red. Además tienes una copia <b>offline</b> en cinta del viernes.</p>";
+        return t + "<p>Los servidores de los departamentos y grupos de investigación no entran en esa política: cada grupo gestiona los suyos, y algunos no tienen copia de nada.</p>";
+      },
+      options:[
+        { t:"Verificar la integridad de las copias (mejor la offline), preparar una red aislada y limpia y restaurar allí por orden de criticidad, probando cada sistema antes de reconectarlo.",
+          pts:10, mins:25,
+          out:function(s){ return "Verificas, montas el entorno limpio y los primeros sistemas críticos vuelven probados y sin rastro del atacante."; },
+          why:"Copias offline o inmutables y probadas, y restaurar solo en un entorno limpio. En <b>Maastricht University</b> el ransomware cifró también los servidores de copias; y en <b>Colonial Pipeline</b>, según se informó, el descifrador era tan lento que acabaron restaurando desde sus copias." },
+        { t:"Restaurar ya el Campus Virtual y la gestión académica desde el backup online sobre la red actual, que hay exámenes y actas.",
+          pts:0, mins:40, set:{ reencrypt:true },
+          out:function(s){ return s.hosts>=18 ? "Intentas restaurar desde el NAS online, pero está cifrado: pierdes 40 minutos antes de darte cuenta. Acabas restaurando desde la copia offline sobre la misma red comprometida." : "Los sistemas vuelven en 40 minutos… pero la red todavía tiene credenciales y accesos del atacante."; },
+          why:"Restaurar sobre una red que aún no está limpia es entregarle el trabajo al atacante: lo volverá a cifrar, por urgentes que sean los exámenes." },
+        { t:"Confiar solo en las copias online porque son las más recientes.",
+          pts:2, mins:35, set:{ reencrypt:true },
+          out:function(s){ return s.hosts>=18 ? "Están cifradas: pierdes 35 minutos y tienes que volver al plan de la copia offline." : "Las restauras sin comprobar que estén limpias: pueden contener ya el malware o la persistencia del atacante."; },
+          why:"Una copia online alcanzable desde la red es un objetivo del ransomware. Las copias que salvan son las offline/inmutables, y hay que verificarlas." },
+        { t:"Formatear los equipos afectados y reinstalar todo desde cero, sin usar las copias.",
+          pts:2, mins:45, ev:true,
+          out:function(s){ return "Reinstalar desde cero lleva horas y borras los discos de los equipos afectados antes de que nadie haya hecho una imagen."; },
+          why:"Reconstruir desde cero puede ser válido en algunos sistemas, pero hacerlo sin preservar evidencias impide saber qué pasó y qué datos salieron." }
+      ]
+    },
+    /* 6 ---------------------------------------------------------------- */
+    { id:6, phase:"Evidencias y alcance de la fuga", type:"single",
+      text:function(s){ return "<p>En el servidor de ficheros aparece una nota de rescate más completa:</p>"; },
+      evidence:function(s){ return "Hemos descargado <span class='hl'>120 GB</span> de vuestros servidores:\n<span class='hl'>expedientes académicos</span>, datos de matrícula (DNI e IBAN),\nhistoriales del <span class='hl'>servicio médico universitario</span> y proyectos\nde investigación con empresas.\nPagad en 48 h o los publicaremos en nuestro portal."; },
+      options:[
+        { t:"Preservar evidencias: imágenes de disco y de memoria de los equipos afectados, guardar logs (VPN, EDR, AD) con cadena de custodia, llamar a un equipo forense (DFIR) y avisar al DPD y a la asesoría jurídica.",
+          pts:10, mins:25,
+          out:function(s){ return "El equipo forense empieza a reconstruir qué sistemas se tocaron y qué salió. Tienes datos para decidir con base."; },
+          why:"Es <b>doble extorsión</b>: además de cifrar, roban datos. Aquí hay datos académicos, económicos y de salud: para saber qué ha salido (y notificar bien) necesitas evidencias intactas y el apoyo del DPD y de la asesoría jurídica." },
+        { t:"Reinstalar ya los equipos afectados para volver a la normalidad antes de que acaben los exámenes.",
+          pts:0, mins:10, ev:true,
+          out:function(s){ return "Los equipos vuelven rápido… pero ya no se puede saber qué se llevaron."; },
+          why:"Sin evidencias no puedes determinar el alcance: la notificación a la AEPD será a ciegas." },
+        { t:"Negar públicamente que hayan robado datos hasta que se demuestre.",
+          pts:0, mins:5,
+          out:function(s){ return "Un periodista te pregunta y lo niegas. Esa afirmación te perseguirá si los datos se filtran."; },
+          why:"Negar sin datos es arriesgado: si luego se publican, pierdes la credibilidad y puedes incumplir obligaciones de notificación." },
+        { t:"Buscar en foros de la dark web si ya han publicado datos de la universidad.",
+          pts:3, mins:30,
+          out:function(s){ return "No encuentras nada todavía, y has gastado media hora que el equipo forense necesitaba."; },
+          why:"Monitorizar la dark web es útil más adelante; ahora lo urgente es preservar evidencias y delimitar el alcance." }
+      ]
+    },
+    /* 7 ---------------------------------------------------------------- multi */
+    { id:7, phase:"Notificación y obligaciones", type:"multi", mins:20,
+      text:function(s){ return "<p>La universidad es <b>pública</b>, así que tiene obligaciones que una empresa privada no tiene. Marca <b>todo lo que corresponde hacer hoy</b> (puedes elegir varias):</p>"; },
+      items:[
+        { t:"Notificar a la AEPD la brecha de datos personales, a través del Delegado de Protección de Datos (plazo: 72 horas desde que se tiene constancia).", ok:true,
+          why:"RGPD, art. 33: sin dilación indebida y, si es posible, en 72 horas. Hay indicios de datos personales robados, incluidos de salud. La Universidad de Alicante comunicó su incidente al DPD para informar a la AEPD." },
+        { t:"Notificar al CCN-CERT a través de LUCIA: las universidades públicas están en el ámbito del ENS y deben notificar los incidentes de impacto alto o superior.", ok:true,
+          why:"Real Decreto 311/2022 (ENS), art. 33, y la Instrucción Técnica de notificación de incidentes. La guía CCN-STIC 817 sirve para clasificar el impacto, y la CCN-STIC 881 es la guía de adecuación al ENS para universidades." },
+        { t:"Contactar con IRIS-CERT (RedIRIS) y denunciar ante la Policía Nacional o la Guardia Civil.", ok:true,
+          why:"IRIS-CERT da soporte a las instituciones afiliadas a RedIRIS, universidades incluidas, y puede hacer de punto de contacto con las fuerzas de seguridad. Avisar pronto a las autoridades suma: el FBI pudo recuperar 63,7 de los 75 bitcoin de Colonial Pipeline gracias a ello." },
+        { t:"Informar al Rectorado o Consejo de Dirección y a la Secretaría General (asesoría jurídica).", ok:true,
+          why:"Las decisiones de continuidad, comunicación y rescate no las toma el Servicio de Informática solo: las toma la dirección, informada y asesorada." },
+        { t:"Informar a los estudiantes y al personal afectados cuando se conozca el alcance, con apoyo del DPD.", ok:true,
+          why:"RGPD, art. 34: si hay alto riesgo para los afectados (datos de salud, económicos y académicos), hay que comunicárselo sin dilación indebida." },
+        { t:"Publicar en la web de la universidad la lista de datos robados y los nombres de los estudiantes afectados.", ok:false,
+          why:"Sería una segunda brecha: publicar datos personales de los afectados. Se informa a cada afectado, no al público." },
+        { t:"Esperar a que termine la semana de exámenes para notificar, para no generar ruido.", ok:false,
+          why:"El plazo de 72 horas corre desde que tienes constancia de la brecha, no desde que te convenga." }
+      ]
+    },
+    /* 8 ---------------------------------------------------------------- */
+    { id:8, phase:"El rescate", type:"single",
+      text:function(s){
+        var t = "<p>Los atacantes abren un chat: exigen un pago en criptomonedas (equivalente a <b>1,5 M€</b>) en 48 horas. El vicerrector de Infraestructuras entra en tu despacho: <em>«Hay actas por cerrar y 20.000 estudiantes matriculándose. Paga y que vuelva todo a funcionar ya.»</em></p>";
+        if(s.flags.mailRead) t += "<p>Y hay más: los atacantes citan frases de vuestro correo institucional y <b>suben el precio un 50 %</b>. Han estado leyendo.</p>";
+        return t;
+      },
+      options:[
+        { t:"No pagar por defecto: decidirlo entre Rectorado, asesoría jurídica y fuerzas de seguridad; comprobar en nomoreransom.org si hay descifrador gratuito; priorizar restaurar desde copias limpias y, si hubiera que negociar, hacerlo solo con especialistas.",
+          pts:10, mins:15,
+          out:function(s){ return "El Rectorado acepta la hoja de ruta. La restauración limpia avanza y ya no dependéis de lo que decidan los atacantes."; },
+          why:"Pagar no garantiza recuperar los datos ni que no los publiquen, y con dinero público es aún más delicado. <b>Maastricht University</b> pagó 30 bitcoin (≈200.000 €) en 2019 para evitar semanas de caída; años después la policía incautó fondos de esos atacantes y se tramitó su devolución, pero nadie debe contar con ello. <b>Colonial Pipeline</b> pagó 75 bitcoin (≈4,4 M$) y, según se informó, acabó restaurando desde copias." },
+        { t:"Pagar de inmediato para recuperar la operativa cuanto antes.",
+          pts:0, mins:20, set:{ paid:true },
+          out:function(s){ return "Haces el pago. Los atacantes envían una herramienta de descifrado lenta que falla en varios servidores, y los datos robados siguen en su poder."; },
+          why:"Pagar es la peor primera decisión: sin garantías, sin resolver la causa raíz (VPN sin MFA, servidores sin parchear), con riesgo legal y sin borrar lo que ya se llevaron. <b>Colonial</b> pagó y aun así tuvo que apoyarse en sus copias." },
+        { t:"Negociar tú mismo en el chat de los atacantes para bajar el precio.",
+          pts:2, mins:30,
+          out:function(s){ return "Pierdes media hora regateando. Les cuentas de más (que hay exámenes y actas, cuánto os cuesta estar parados) y la presión sube."; },
+          why:"Negociar sin experiencia le da información al atacante. Si se llega a negociar, que sea con especialistas y con las autoridades al corriente." },
+        { t:"Ignorar el chat y no tomar ninguna decisión sobre el rescate.",
+          pts:2, mins:0,
+          out:function(s){ return "Sin una postura clara, el vicerrector decide por su cuenta contactar con los atacantes."; },
+          why:"No decidir también es decidir: hace falta una postura clara y documentada del Rectorado, con asesoría jurídica." }
+      ]
+    },
+    /* 9 ---------------------------------------------------------------- */
+    { id:9, phase:"Erradicación y recuperación", type:"single",
+      enter:function(s){
+        var ev = [];
+        if(s.flags.reencrypt){ s.clock += 60; s.hosts += 8; ev.push("<b>Reinfección.</b> Los servidores que restauraste sobre la red comprometida <b>han vuelto a cifrarse</b> (+8 equipos, +60 min)."); }
+        if(s.flags.reentry){ s.clock += 45; s.hosts += 6; ev.push("<b>El atacante vuelve a entrar.</b> Salta una alerta: alguien accede a la red usando "+s.flags.reentry+" (+6 equipos, +45 min)."); }
+        return ev;
+      },
+      text:function(s){ return "<p>Son las <b>"+hhmm(s.clock)+"</b>. Toca reconstruir. Los grupos de investigación presionan para recuperar sus servidores los primeros; docencia necesita el Campus Virtual y Secretaría las actas. ¿Cómo planteas la recuperación?</p>"; },
+      options:[
+        { t:"Reconstruir primero el Directorio Activo y la identidad, después los servicios críticos (Campus Virtual, gestión académica, actas y matrícula) y luego el resto; los servidores de departamentos, solo tras revisarlos: parcheados, con EDR y gestionados por el Servicio de Informática.",
+          pts:10, mins:60,
+          out:function(s){ return "El orden es lento, pero sólido: identidad → servicios críticos de docencia y gestión → resto, todo en entorno limpio, parcheado y monitorizado."; },
+          why:"Se recupera en orden y en entorno limpio. En <b>Maastricht</b> el atacante escaló por un servidor sin parchear, y <b>TalkTalk (2015)</b> fue atacada por una vulnerabilidad que llevaba años sin parchear: parchea antes de reconectar." },
+        { t:"Reconectar todo a la vez, también los servidores de los departamentos, para que mañana todo funcione con normalidad.",
+          pts:0, mins:15,
+          out:function(s){ return "Mañana vuelve la comunidad, pero has reintroducido servidores sin limpiar y sin parchear."; },
+          why:"Las prisas reintroducen el malware y las vulnerabilidades, y los servidores huérfanos de departamentos fueron justo la puerta de entrada." },
+        { t:"Restaurar lo que pida cada decano o director de departamento, por orden de llegada.",
+          pts:3, mins:40,
+          out:function(s){ return "Recuperas cosas sueltas sin un criterio común y con dependencias rotas entre sistemas."; },
+          why:"La recuperación se ordena por criticidad de negocio y dependencias, no por quién presione más." },
+        { t:"Dar el incidente por cerrado: ya está restaurado casi todo.",
+          pts:0, mins:0,
+          out:function(s){ return "Te relajas… sin saber si el atacante sigue dentro."; },
+          why:"Cerrar antes de verificar que el atacante no sigue dentro es la forma de volver a empezar mañana." }
+      ]
+    },
+    /* 10 --------------------------------------------------------------- */
+    { id:10, phase:"Cierre del día", type:"single",
+      text:function(s){ return "<p>Son las <b>"+hhmm(s.clock)+"</b>. Casi todo funciona. Antes de irte a casa, ¿qué haces?</p>"; },
+      options:[
+        { t:"Cazar persistencia (cuentas nuevas, tareas programadas, servicios, webshells), rotar credenciales críticas, activar monitorización reforzada 24×7, inventariar los servidores de departamentos que nadie gestiona y convocar un post-mortem sin buscar culpables.",
+          pts:10, mins:30,
+          out:function(s){ return "Buscas puertas traseras, rotas lo crítico, dejas vigilancia reforzada y abres el inventario de servidores huérfanos. Mañana habrá un post-mortem."; },
+          why:"Un incidente no termina cuando todo funciona: termina cuando sabes que el atacante no sigue dentro y has aprendido. En una universidad, además, hay que traer bajo control los servidores descentralizados." },
+        { t:"Cerrar el incidente y pedir a todos que cambien la contraseña mañana.",
+          pts:3, mins:5,
+          out:function(s){ return "Cierras el incidente. Si había persistencia, sigue ahí."; },
+          why:"Cambiar contraseñas está bien, pero no sustituye a cazar la persistencia ni a reforzar la monitorización." },
+        { t:"Dejar la revisión para cuando acabe la convocatoria de exámenes.",
+          pts:0, mins:0,
+          out:function(s){ return "Una semana con el atacante potencialmente dentro y sin vigilancia."; },
+          why:"El tiempo juega a favor del atacante." },
+        { t:"Identificar al profesor de la VPN y al investigador del servidor sin parchear, y abrirles un expediente.",
+          pts:1, mins:20,
+          out:function(s){ return "Pasas la tarde buscando culpables. El profesorado aprende que es mejor no reportar nada."; },
+          why:"El fallo fue de sistema: VPN sin MFA, alerta sin atender y servidores sin gestionar ni parchear. Buscar culpables destruye la cultura de reporte." }
+      ]
+    }
+  ];
+
+  /* ------------------------------------------------------------ estado */
+  var KEY = "nunsys-simulacro-uni-v1";
+  function fresh(){ return { screen:"intro", step:0, clock:START, hosts:1, ev:0, flags:{}, res:{}, order:{}, entered:{}, events:{}, sel:{} }; }
+  var S = fresh();
+  try{ var raw = localStorage.getItem(KEY); if(raw){ var o = JSON.parse(raw); if(o && o.res){ S = o; } } }catch(e){}
+  function save(){ try{ localStorage.setItem(KEY, JSON.stringify(S)); }catch(e){} }
+
+  var root = document.getElementById("app");
+  function render(){ root.innerHTML = ""; if(S.screen==="intro") renderIntro(); else if(S.screen==="end") renderEnd(); else renderStep(); save(); }
+
+  /* ------------------------------------------------------------ chrome */
+  function topbar(showDots){
+    var t = el("div","topbar");
+    t.appendChild(el("div","brand","<span class='dot'></span> Simulacro de incidente · universidad"));
+    if(showDots){
+      var d = el("div","dots");
+      STEPS.forEach(function(st,i){
+        var r = S.res[st.id]; var c = "";
+        if(r){ c = r.pts>=9 ? "g" : (r.pts>=3 ? "w" : "b"); } else if(i===S.step && S.screen==="step") c = "cur";
+        d.appendChild(el("i", c));
+      });
+      t.appendChild(d);
+    }
+    var b = el("button","reset","Reiniciar");
+    b.addEventListener("click", function(){ if(confirm("¿Empezar de nuevo desde las 09:00?")){ S = fresh(); render(); } });
+    t.appendChild(b);
+    return t;
+  }
+  function hud(){
+    var h = el("div","hud");
+    var evl = evLabel(S.ev);
+    h.innerHTML =
+      "<div class='tile'><div class='k'>Hora</div><div class='v pink'>"+hhmm(S.clock)+"</div></div>"+
+      "<div class='tile'><div class='k'>Equipos cifrados</div><div class='v "+(S.hosts>=18?"red":(S.hosts>=8?"amber":""))+"'>"+S.hosts+"</div></div>"+
+      "<div class='tile'><div class='k'>Evidencias</div><div class='v "+evl[1]+"'>"+evl[0]+"</div></div>";
+    return h;
+  }
+
+  /* ------------------------------------------------------------ intro */
+  function renderIntro(){
+    var app = el("div","app"); app.appendChild(topbar(false));
+    var m = el("div","main intro");
+    m.innerHTML =
+      "<div class='kicker'>Lunes · 09:00 · semana de exámenes</div>"+
+      "<h1>Ransomware en la Universidad del Alto Ebro</h1>"+
+      "<p class='lead'>Eres la persona responsable de seguridad del Servicio de Informática de la <b>Universidad del Alto Ebro</b> (pública: 25.000 estudiantes, 3 campus). Hay Campus Virtual, matrícula online, eduroam, VPN para profesorado y personal, un EDR en los equipos centrales… y muchos servidores de departamentos y grupos de investigación que cada uno gestiona por su cuenta. Es semana de exámenes, se cierran actas y hay matrícula abierta. Hoy, un ransomware se va a convertir en tu problema.</p>"+
+      "<div class='rules'><div><b>10 DECISIONES</b>Cada una cuesta tiempo y deja consecuencias que arrastrarás a los siguientes pasos.</div>"+
+      "<div><b>SIN DESHACER</b>No hay marcha atrás. Decide como si el reloj corriera, porque corre.</div>"+
+      "<div><b>NOTA DE CONTENCIÓN</b>Al final recibes una nota de 0 a 10 y un repaso con casos reales de universidades y empresas.</div></div>"+
+      "<p class='lead' style='font-size:15px'>Dura unos 15 minutos. La universidad es inventada; los casos que aparecen al final (Maastricht University, UAB, Universidad de Alicante, Target, Colonial Pipeline, TalkTalk) son reales.</p>";
+    var row = el("div","row");
+    var go = el("button","btn primary","Empezar el simulacro");
+    go.addEventListener("click", function(){ S.screen = "step"; S.step = 0; render(); });
+    row.appendChild(go); m.appendChild(row);
+    app.appendChild(m); root.appendChild(app);
+  }
+
+  /* ------------------------------------------------------------ step */
+  function renderStep(){
+    var step = STEPS[S.step];
+    // entering the step for the first time
+    if(!S.entered[step.id]){
+      S.entered[step.id] = true;
+      if(step.startAt && S.clock < step.startAt) S.clock = step.startAt;
+      if(step.enter){ S.events[step.id] = step.enter(S) || []; }
+    }
+    var res = S.res[step.id];
+    var app = el("div","app"); app.appendChild(topbar(true)); app.appendChild(hud());
+    var m = el("div","main");
+    m.appendChild(el("div","kicker", hhmm(S.clock)+" <span>· Decisión "+(S.step+1)+" de "+STEPS.length+" · "+step.phase+"</span>"));
+
+    // events
+    (S.events[step.id]||[]).forEach(function(e){ m.appendChild(el("div","event", e)); });
+
+    var card = el("div","card"); card.innerHTML = step.text(S); m.appendChild(card);
+    if(step.evidence){ m.appendChild(el("div","evidence", step.evidence(S))); }
+
+    if(step.type === "single") renderSingle(m, step, res); else renderMulti(m, step, res);
+
+    app.appendChild(m); root.appendChild(app);
+  }
+
+  function renderSingle(m, step, res){
+    if(!S.order[step.id]) S.order[step.id] = shuffle(step.options.map(function(_,i){ return i; }));
+    var order = S.order[step.id];
+    var list = el("div","opts");
+    var bestIdx = 0; step.options.forEach(function(o,i){ if(o.pts > step.options[bestIdx].pts) bestIdx = i; });
+    order.forEach(function(oi, pos){
+      var o = step.options[oi];
+      var b = el("button","opt");
+      var tag = "<span class='tag'>"+letter(pos)+"</span><span>"+o.t+"</span>";
+      b.innerHTML = tag;
+      if(res){
+        b.disabled = true;
+        if(oi === res.idx){ b.classList.add("chosen"); if(res.pts<3) b.classList.add("bad"); else if(res.pts<9) b.classList.add("warn"); b.appendChild(el("span","mark", res.pts>=9?"✓ TU DECISIÓN":"TU DECISIÓN")); }
+        if(oi === bestIdx){ b.classList.add("best"); if(oi!==res.idx) b.appendChild(el("span","mark","✓ LA MÁS SÓLIDA")); }
+        if(oi !== res.idx && oi !== bestIdx) b.classList.add("dim");
+      } else {
+        b.addEventListener("click", function(){ choose(step, oi); });
+      }
+      list.appendChild(b);
+    });
+    m.appendChild(list);
+    if(res) renderResult(m, step, res, bestIdx);
+  }
+
+  function choose(step, idx){
+    var o = step.options[idx];
+    var before = { clock:S.clock, hosts:S.hosts, ev:S.ev };
+    S.clock += o.mins;
+    if(o.hosts) S.hosts = o.hosts(S);
+    if(o.ev) S.ev += 1;
+    if(o.set){ for(var k in o.set){ if(k==="reentry"){ if(!S.flags.reentry) S.flags.reentry = o.set[k]; } else { S.flags[k] = o.set[k]; } } }
+    // text is computed with the state *before* applying hosts for readability
+    var tmp = { clock:before.clock, hosts:before.hosts, ev:before.ev, flags:S.flags };
+    S.res[step.id] = { idx:idx, pts:o.pts, before:before, after:{ clock:S.clock, hosts:S.hosts, ev:S.ev }, out:o.out(tmp), why:o.why };
+    render();
+  }
+
+  function renderResult(m, step, res, bestIdx){
+    var cls = res.pts>=9 ? "good" : (res.pts>=3 ? "warn" : "bad");
+    var label = res.pts>=9 ? "DECISIÓN ACERTADA" : (res.pts>=3 ? "ACEPTABLE, PERO MEJORABLE" : "MALA DECISIÓN");
+    var box = el("div","result "+cls);
+    box.appendChild(el("div","badge", label+" · "+res.pts+"/10"));
+    box.appendChild(el("p",null,res.out));
+    var chips = el("div","chips");
+    chips.appendChild(el("span","chip","Hora "+hhmm(res.before.clock)+" → "+hhmm(res.after.clock)+" (+"+(res.after.clock-res.before.clock)+" min)"));
+    if(res.after.hosts !== res.before.hosts) chips.appendChild(el("span","chip "+(res.after.hosts>res.before.hosts+2?"bad":""),"Equipos cifrados "+res.before.hosts+" → "+res.after.hosts));
+    if(res.after.ev > res.before.ev) chips.appendChild(el("span","chip bad","Evidencias dañadas"));
+    box.appendChild(chips);
+    box.appendChild(el("p","why", res.why));
+    if(res.idx !== bestIdx) box.appendChild(el("div","best","<b>La opción más sólida era:</b> "+step.options[bestIdx].t));
+    m.appendChild(box);
+    appendNext(m);
+  }
+
+  function appendNext(m){
+    var row = el("div","row");
+    var last = S.step === STEPS.length-1;
+    var nb = el("button","btn primary", last ? "Ver mi nota de contención" : "Continuar →");
+    nb.addEventListener("click", function(){ if(last){ S.screen = "end"; } else { S.step++; } window.scrollTo(0,0); render(); });
+    row.appendChild(nb); m.appendChild(row);
+  }
+
+  /* multi-select */
+  function renderMulti(m, step, res){
+    if(!S.order[step.id]) S.order[step.id] = shuffle(step.items.map(function(_,i){ return i; }));
+    var order = S.order[step.id];
+    var sel = S.sel[step.id] || (S.sel[step.id] = []);
+    var list = el("div","opts");
+    order.forEach(function(ii){
+      var it = step.items[ii];
+      var on = sel.indexOf(ii) >= 0;
+      var b = el("button","chk");
+      var cls = on ? " on" : "";
+      var boxTxt = on ? "✓" : "";
+      var extra = "";
+      if(res){
+        b.disabled = true;
+        if(on && it.ok){ cls = " r-ok"; boxTxt = "✓"; }
+        else if(on && !it.ok){ cls = " r-bad"; boxTxt = "✗"; }
+        else if(!on && it.ok){ cls = " r-bad"; boxTxt = "!"; extra = "<span class='why'><b>Te faltaba esta.</b> "+it.why+"</span>"; }
+        if(on) extra = "<span class='why'>"+it.why+"</span>";
+        if(!on && !it.ok) extra = "";
+      }
+      b.className = "chk"+cls;
+      b.innerHTML = "<span class='box'>"+boxTxt+"</span><span>"+it.t+extra+"</span>";
+      if(!res) b.addEventListener("click", function(){
+        var i = sel.indexOf(ii); if(i>=0) sel.splice(i,1); else sel.push(ii); render();
+      });
+      list.appendChild(b);
+    });
+    m.appendChild(list);
+    if(!res){
+      var row = el("div","row");
+      var ok = el("button","btn primary","Confirmar selección");
+      ok.disabled = sel.length === 0;
+      ok.addEventListener("click", function(){ confirmMulti(step, sel); });
+      row.appendChild(ok); row.appendChild(el("span",null,"<span style='color:var(--ink-soft);font-size:14px'>"+sel.length+" marcadas</span>"));
+      m.appendChild(row);
+    } else {
+      var cls = res.pts>=9 ? "good" : (res.pts>=3 ? "warn" : "bad");
+      var label = res.pts>=9 ? "DECISIÓN ACERTADA" : (res.pts>=3 ? "ACEPTABLE, PERO MEJORABLE" : "MALA DECISIÓN");
+      var box = el("div","result "+cls);
+      box.appendChild(el("div","badge", label+" · "+res.pts+"/10"));
+      box.appendChild(el("p",null,res.out));
+      var chips = el("div","chips");
+      chips.appendChild(el("span","chip","Hora "+hhmm(res.before.clock)+" → "+hhmm(res.after.clock)+" (+"+(res.after.clock-res.before.clock)+" min)"));
+      box.appendChild(chips);
+      if(res.why) box.appendChild(el("p","why", res.why));
+      m.appendChild(box);
+      appendNext(m);
+    }
+  }
+
+  function confirmMulti(step, sel){
+    var R = 0, W = 0, total = 0;
+    step.items.forEach(function(it, i){ if(it.ok) total++; var on = sel.indexOf(i)>=0; if(on && it.ok) R++; if(on && !it.ok) W++; });
+    var pts = Math.max(0, Math.round(10*(R - W)/total));
+    var before = { clock:S.clock, hosts:S.hosts, ev:S.ev };
+    S.clock += step.mins;
+    var out = "Has acertado <b>"+R+" de "+total+"</b> obligaciones y has marcado <b>"+W+"</b> acciones incorrectas.";
+    var why = "";
+    if(S.ev >= 1) why = "<b>Ojo:</b> como no preservaste todas las evidencias, tendrás que decirle a la AEPD que no puedes determinar con precisión el alcance de la fuga.";
+    S.res[step.id] = { idx:-1, pts:pts, before:before, after:{ clock:S.clock, hosts:S.hosts, ev:S.ev }, out:out, why:why, multi:{ R:R, W:W, total:total } };
+    render();
+  }
+
+  /* ------------------------------------------------------------ final */
+  function tier(n){
+    if(n>=9) return ["Contención ejemplar","Cortaste el ataque a tiempo, protegiste las evidencias y cumpliste con tus obligaciones. Este es el estándar al que apuntar."];
+    if(n>=7) return ["Contención sólida","Buen trabajo: contuviste el incidente con algún tropiezo. Repasa las decisiones marcadas en ámbar."];
+    if(n>=5) return ["Contención tardía","Terminaste recuperando, pero a un coste alto en tiempo, equipos y riesgo. Revisa el recorrido: hay decisiones que cambian el resultado."];
+    if(n>=3) return ["Crisis grave","El incidente se te fue de las manos. Mira dónde se perdió el control y repítelo."];
+    return ["Desastre","Todo lo que podía salir mal, salió mal. Lo bueno: es un simulacro y puedes repetirlo."];
+  }
+
+  function renderEnd(){
+    var total = 0; STEPS.forEach(function(st){ total += (S.res[st.id] ? S.res[st.id].pts : 0); });
+    var nota = Math.round(total) / 10; // 0..10
+    var tr = tier(nota);
+    var app = el("div","app"); app.appendChild(topbar(true));
+    var m = el("div","main end");
+    m.appendChild(el("h1",null,"NOTA DE CONTENCIÓN"));
+    m.appendChild(el("div","grade","<b>"+nota.toFixed(1).replace(".0","")+"</b><span> / 10</span>"));
+    var bar = el("div","bar"); var fill = el("i"); fill.style.width = (nota*10)+"%"; bar.appendChild(fill); m.appendChild(bar);
+    m.appendChild(el("div","tier",tr[0]));
+    m.appendChild(el("p",null,tr[1]));
+
+    // facts
+    var evl = evLabel(S.ev);
+    var r7 = S.res[7]; var legal = !r7 ? ["—",""] : (r7.pts>=9 ? ["En plazo y completa","green"] : (r7.pts>=5 ? ["Incompleta","amber"] : ["En riesgo de sanción","red"]));
+    var stopAt = S.res[2] ? S.res[2].after.clock : S.clock; var stopMin = stopAt - START;
+    var stopTxt = hhmm(stopAt); var stopCls = stopMin<=22?"green":(stopMin<=45?"amber":"red");
+    var facts = el("div","facts");
+    function fact(k,v,c){ return "<div class='fact'><div class='k'>"+k+"</div><div class='v "+(c||"")+"'>"+v+"</div></div>"; }
+    facts.innerHTML =
+      fact("Equipos cifrados", String(S.hosts), S.hosts<=8?"green":(S.hosts<18?"amber":"red"))+
+      fact("Evidencias", evl[0], evl[1])+
+      fact("Notificación legal", legal[0], legal[1])+
+      fact("Rescate", S.flags.paid?"Pagado (sin garantías)":"No pagado", S.flags.paid?"red":"green")+
+      fact("Reentrada del atacante", (S.flags.reentry||S.flags.reencrypt)?"Sí":"No", (S.flags.reentry||S.flags.reencrypt)?"red":"green")+
+      fact("Cifrado detenido a las", stopTxt, stopCls);
+    m.appendChild(facts);
+
+    // timeline
+    m.appendChild(el("h2","sec","Tu recorrido"));
+    STEPS.forEach(function(st){
+      var r = S.res[st.id]; if(!r) return;
+      var best = null;
+      var cls = r.pts>=9 ? "g" : (r.pts>=3 ? "w" : "b");
+      var chosen, better = "";
+      if(st.type==="single"){
+        chosen = st.options[r.idx].t;
+        var bi = 0; st.options.forEach(function(o,i){ if(o.pts>st.options[bi].pts) bi = i; });
+        if(bi !== r.idx) better = "<div class='better'><b>Mejor:</b> "+st.options[bi].t+"</div>";
+      } else {
+        chosen = "Acertaste "+r.multi.R+" de "+r.multi.total+" obligaciones"+(r.multi.W?" y marcaste "+r.multi.W+" incorrectas":"")+".";
+      }
+      var d = el("div","rec "+cls);
+      d.innerHTML = "<div class='t'>"+st.id+". "+st.phase.toUpperCase()+" · "+r.pts+"/10</div><div class='you'>"+chosen+"</div>"+better;
+      m.appendChild(d);
+    });
+
+    // real cases
+    m.appendChild(el("h2","sec","Qué dice la realidad"));
+    var mistakes = [];
+    var r2 = S.res[2], r3 = S.res[3], r8 = S.res[8], r9 = S.res[9];
+    function chosenIs(st,i){ var r=S.res[st]; return r && r.idx===i; }
+    if(chosenIs(2,2)) mistakes.push("Esperaste a «confirmar» una alerta evidente: es el error de <b>Target</b>. Sus herramientas avisaron y nadie actuó.");
+    if(r3 && r3.pts<9) mistakes.push("No cerraste del todo el acceso (VPN sin MFA, servidor sin parchear y cuenta de administrador creada por el atacante): es el fallo de <b>Colonial Pipeline</b> y de <b>Maastricht University</b>.");
+    if(S.flags.backupsHit) mistakes.push("Tus copias online también se cifraron: le pasó a <b>Maastricht University</b>, donde cayeron hasta los servidores de copias. Solo salvan las copias offline o inmutables.");
+    if(S.flags.paid) mistakes.push("Pagaste el rescate: <b>Maastricht</b> pagó ≈200.000 € y <b>Colonial</b> 75 bitcoin; los dos acabaron dependiendo también de sus propias copias y de la ayuda de las autoridades.");
+    if(r9 && r9.pts<9) mistakes.push("Reconectaste sin garantías de que todo estuviera parcheado y limpio: <b>TalkTalk</b> fue atacada por una vulnerabilidad que llevaba años sin parchear, y en <b>Maastricht</b> el atacante entró por un servidor sin parchear.");
+    if(mistakes.length){
+      var ul = el("ul","lessons"); mistakes.forEach(function(t){ ul.appendChild(el("li",null,t)); });
+      m.appendChild(el("p",null,"Errores de tu simulacro que ya cometieron universidades y empresas reales:")); m.appendChild(ul);
+    } else {
+      m.appendChild(el("p",null,"No repetiste ninguno de los grandes errores de los casos reales. Buen trabajo."));
+    }
+    var real = el("div","real");
+    real.innerHTML =
+      "<div><b>MAASTRICHT UNIVERSITY · 2019</b>Dos correos de phishing abiertos en octubre; el atacante escaló en un servidor sin parchear y el 23 de diciembre cifró 267 servidores, también los de copias. Pagó 30 bitcoin (≈200.000 €).</div>"+
+      "<div><b>UAB · 2021</b>Ransomware del grupo PYSA: cerca de 1.200 servidores y 10.000 ordenadores afectados y más de 50.000 usuarios sin servicio. Se cifraron los datastores de la virtualización.</div>"+
+      "<div><b>UNIVERSIDAD DE ALICANTE · 2026</b>Frenó un ataque con un supuesto ransomware aislando los servidores afectados y desconectando los que compartían infraestructura, en plena convocatoria de exámenes y matrícula.</div>"+
+      "<div><b>TARGET · 2013</b>Los sistemas detectaron el malware y generaron alertas, pero el equipo no actuó. Los atacantes tuvieron dos semanas más para robar 40 millones de tarjetas.</div>"+
+      "<div><b>COLONIAL PIPELINE · 2021</b>Una cuenta VPN sin MFA y con contraseña filtrada. Paró el oleoducto, pagó ≈4,4 M$ y el FBI recuperó 63,7 de los 75 bitcoin por avisar pronto.</div>"+
+      "<div><b>TALKTALK · 2015</b>Inyección SQL en páginas heredadas sin parchear: 156.959 clientes afectados y multa de 400.000 £.</div>";
+    m.appendChild(real);
+
+    m.appendChild(el("h2","sec","Lo que te llevas"));
+    var l = el("ul","lessons");
+    ["MFA en todo acceso remoto (VPN de profesorado y personal), sin excepciones.","Alguien tiene que mirar las alertas: una alerta sin dueño es una alerta ignorada.","Inventario y control de los servidores descentralizados de departamentos y grupos de investigación: la puerta de entrada suele ser el servidor que nadie gestiona.","Segmentación entre administración, docencia e investigación, para poder aislar sin apagarlo todo.","Copias offline o inmutables, y probadas: el ransomware va a por las copias.","Aislar primero, investigar después, y sin destruir evidencias.","Un plan de comunicación por un canal alternativo y las obligaciones conocidas de antemano: AEPD (72 h), CCN-CERT por LUCIA (ENS) e IRIS-CERT.","El incidente no acaba cuando funciona todo, sino cuando sabes que el atacante ya no está."].forEach(function(t){ l.appendChild(el("li",null,t)); });
+    m.appendChild(l);
+
+    var row = el("div","row"); row.style.marginTop = "14px";
+    var again = el("button","btn primary","Volver a jugar con otras decisiones");
+    again.addEventListener("click", function(){ S = fresh(); S.screen = "step"; window.scrollTo(0,0); render(); });
+    row.appendChild(again); m.appendChild(row);
+    app.appendChild(m); root.appendChild(app);
+  }
+
+  render();
+})();
+</script>
+</body>
+</html>
